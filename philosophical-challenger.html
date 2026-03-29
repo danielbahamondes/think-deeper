@@ -802,42 +802,52 @@
     userInput.focus();
 
     // ── Mobile keyboard handling ──
-    // visualViewport is the only reliable way to detect the iOS keyboard.
-    // window.innerHeight and dvh don't update fast enough or consistently.
+    // Uses visualViewport (the only reliable iOS keyboard signal).
+    // Two compounding problems on iOS Safari:
+    //   1. The browser silently scrolls window.scrollY when an input is focused,
+    //      offsetting the page downward and revealing blank space at the bottom.
+    //   2. scrollToBottom() on the welcome screen scrolls to empty space.
+    // Fix: counteract the page scroll with translateY(-vv.pageTop), and only
+    // hide the header / scroll to bottom when there are actual messages.
     if (window.visualViewport) {
-      let lastHeight = window.visualViewport.height;
-
-      const onViewportResize = () => {
+      const applyViewport = () => {
         const vv = window.visualViewport;
         const vvHeight = Math.round(vv.height);
+        const keyboardOpen = (window.innerHeight - vvHeight) > 150;
+        const hasMessages = welcome.classList.contains('hidden');
 
-        // Drive the full app height from the actual visible area so nothing
-        // sits behind the keyboard.
+        // Constrain the app to the actual visible area.
         document.body.style.height = vvHeight + 'px';
 
-        // Keyboard is open when the visible area is meaningfully shorter than
-        // the full window height. 150 px is a safe threshold across devices.
-        const keyboardOpen = (window.innerHeight - vvHeight) > 150;
-        const wasOpen = document.documentElement.classList.contains('keyboard-open');
+        // vv.pageTop is the scroll offset iOS silently applies to bring the
+        // focused input into view. A negative translateY cancels that shift,
+        // preventing the blank-black-area-at-the-bottom bug.
+        document.body.style.transform = `translateY(${-Math.round(vv.pageTop)}px)`;
 
-        document.documentElement.classList.toggle('keyboard-open', keyboardOpen);
+        // Only collapse the header when the keyboard is open AND there are
+        // messages to show — on the welcome screen the header fills space and
+        // helps keep content visible.
+        document.documentElement.classList.toggle('keyboard-open', keyboardOpen && hasMessages);
 
-        // Scroll chat to bottom whenever the keyboard opens or while it
-        // finishes animating in (resize fires multiple times).
         if (keyboardOpen) {
-          scrollToBottom();
-        }
-
-        // When keyboard closes, restore natural body height so the header
-        // reappears and the layout fills the screen again.
-        if (!keyboardOpen) {
+          if (hasMessages) {
+            // Messages exist: keep the latest in view.
+            scrollToBottom();
+          } else {
+            // Welcome screen: scroll to top so the icon/title stay visible.
+            chatHistory.scrollTop = 0;
+          }
+        } else {
+          // Keyboard dismissed: restore natural sizing.
           document.body.style.height = '';
+          document.body.style.transform = '';
         }
-
-        lastHeight = vvHeight;
       };
 
-      window.visualViewport.addEventListener('resize', onViewportResize);
+      // 'resize' fires as the keyboard animates; 'scroll' fires when iOS
+      // offsets the page — both need the same correction.
+      window.visualViewport.addEventListener('resize', applyViewport);
+      window.visualViewport.addEventListener('scroll', applyViewport);
     }
   </script>
 </body>
