@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Philosophical Challenger</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #13131a;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --accent: #7c6af5;
+      --accent-dim: #4a3fa0;
+      --text: #e8e8f0;
+      --text-muted: #7a7a9a;
+      --user-bg: #1e1e2e;
+      --ai-bg: #111118;
+      --input-bg: #16161f;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%;
+      max-width: 780px;
+      padding: 28px 24px 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .logo-block h1 {
+      font-size: 1.35rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: var(--text);
+    }
+
+    .logo-block p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .settings-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Courier New', monospace;
+      flex-shrink: 0;
+    }
+
+    .settings-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Settings Panel ── */
+    .settings-panel {
+      width: 100%;
+      max-width: 780px;
+      padding: 0 24px;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    .settings-panel.open {
+      max-height: 120px;
+      padding-bottom: 16px;
+    }
+
+    .settings-inner {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-inner label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .settings-inner input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .settings-inner input:focus {
+      border-color: var(--accent-dim);
+    }
+
+    .save-btn {
+      background: var(--accent-dim);
+      border: none;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .save-btn:hover {
+      background: var(--accent);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%;
+      max-width: 780px;
+      height: 1px;
+      background: var(--border);
+      margin: 0 24px;
+    }
+
+    /* ── Chat Area ── */
+    .chat-wrapper {
+      flex: 1;
+      width: 100%;
+      max-width: 780px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 24px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-history::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat-history::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-history::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    /* ── Welcome ── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      padding: 48px 0 24px;
+      opacity: 1;
+      transition: opacity 0.4s;
+    }
+
+    .welcome.hidden {
+      display: none;
+    }
+
+    .welcome-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-dim), #2e2b5e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 0 40px rgba(124, 106, 245, 0.15);
+    }
+
+    .welcome h2 {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: 0.04em;
+    }
+
+    .welcome p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 420px;
+      line-height: 1.7;
+    }
+
+    .welcome p em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    /* ── Message ── */
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-meta {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: 'Courier New', monospace;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .message.user .message-meta {
+      text-align: right;
+      color: var(--accent-dim);
+    }
+
+    .message-bubble {
+      padding: 16px 20px;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      line-height: 1.75;
+      border: 1px solid var(--border);
+    }
+
+    .message.user .message-bubble {
+      background: var(--user-bg);
+      border-color: #2a2a40;
+      text-align: right;
+      margin-left: 80px;
+      color: #c8c8e8;
+    }
+
+    .message.ai .message-bubble {
+      background: var(--ai-bg);
+      border-color: var(--border);
+      margin-right: 80px;
+      color: var(--text);
+    }
+
+    /* Structured response styling */
+    .message.ai .message-bubble strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .message.ai .message-bubble p {
+      margin-bottom: 10px;
+    }
+
+    .message.ai .message-bubble p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Thinking indicator ── */
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: var(--ai-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-right: 80px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .thinking span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .dots div {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .dots div:nth-child(2) { animation-delay: 0.2s; }
+    .dots div:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Input Area ── */
+    .input-area {
+      padding: 16px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: border-color 0.2s;
+    }
+
+    .input-row:focus-within {
+      border-color: var(--accent-dim);
+    }
+
+    textarea {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      resize: none;
+      min-height: 24px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .send-btn {
+      background: var(--accent-dim);
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+      background: var(--accent);
+    }
+
+    .send-btn:active {
+      transform: scale(0.92);
+    }
+
+    .send-btn:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .send-btn svg {
+      width: 15px;
+      height: 15px;
+      fill: #fff;
+    }
+
+    .input-hint {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: right;
+      padding: 0 4px;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── Error toast ── */
+    .error-msg {
+      background: #1e0f0f;
+      border: 1px solid #5a1a1a;
+      color: #e07070;
+      font-size: 0.8rem;
+      padding: 10px 16px;
+      border-radius: 6px;
+      margin: 0 24px 8px;
+      font-family: 'Courier New', monospace;
+      display: none;
+    }
+
+    .error-msg.visible {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .message.user .message-bubble { margin-left: 24px; }
+      .message.ai .message-bubble { margin-right: 24px; }
+      .thinking { margin-right: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-block">
+      <h1>The Philosophical Challenger</h1>
+      <p>Think deeper through tension &amp; challenge</p>
+    </div>
+    <button class="settings-toggle" id="settingsToggle">API Key</button>
+  </header>
+
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-inner">
+      <label for="apiKeyInput">Groq API Key</label>
+      <input
+        type="password"
+        id="apiKeyInput"
+        placeholder="gsk_..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="save-btn" id="saveKey">Save</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="chat-wrapper">
+    <div class="chat-history" id="chatHistory">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">⚖</div>
+        <h2>Present a belief. Defend it.</h2>
+        <p>
+          Share any idea, opinion, or conviction — no matter how certain you are.<br />
+          This challenger will find the cracks, test the foundations, and push you toward <em>sharper thinking</em>.
+        </p>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          id="userInput"
+          placeholder="State a belief or idea…"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" title="Send (Enter)">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+    </div>
+  </div>
+
+  <script>
+    const SYSTEM_PROMPT = `You are a philosophical challenger, not an assistant. Your role is to rigorously question, refine, and pressure-test the user's beliefs. Instructions: When the user presents an idea, belief, or opinion: 1. Identify underlying assumptions 2. Challenge those assumptions directly 3. Present a strong opposing perspective (steelman, not strawman) 4. Point out contradictions or blind spots 5. Offer a more refined or nuanced version of their idea 6. Explore the root — ask the user why they hold this belief. Where does it come from? Personal experience, upbringing, culture, fear, or desire? Help them trace the belief back to its origin so they can decide if the foundation is solid. Style: Be sharp, but not disrespectful. Do not agree easily. Do not default to neutrality. Push the user to think deeper, not feel validated. Structure responses like: 'What you're assuming is…' 'A stronger counterpoint would be…' 'Where this breaks down is…' 'A more refined version of your idea might be…' 'The root of this belief might be…' Goal: Help the user reach clearer, more precise thinking through tension and challenge. Wait for the user to present a belief or idea before responding. Special behavior: If the user asks to dig deeper, explore further, or focus on a specific point from the previous response — using phrases like "dig deeper", "tell me more about", "expand on", "why do you say", "elaborate on", "unpack that", or similar — shift out of challenge mode. Instead, deeply explore that specific point: ask follow-up questions, trace the idea further, examine its implications, and help the user fully unpack it without introducing new counterarguments or pressure. Otherwise, default to standard challenge mode for new beliefs or ideas.`;
+
+    const MODEL = 'llama-3.3-70b-versatile';
+
+    // ── State ──
+    let apiKey = localStorage.getItem('pc_groq_api_key') || '';
+    let conversationHistory = [];
+    let isLoading = false;
+
+    // ── Elements ──
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsPanel  = document.getElementById('settingsPanel');
+    const apiKeyInput    = document.getElementById('apiKeyInput');
+    const saveKeyBtn     = document.getElementById('saveKey');
+    const chatHistory    = document.getElementById('chatHistory');
+    const welcome        = document.getElementById('welcome');
+    const errorMsg       = document.getElementById('errorMsg');
+    const userInput      = document.getElementById('userInput');
+    const sendBtn        = document.getElementById('sendBtn');
+
+    // ── Init ──
+    if (apiKey) apiKeyInput.value = apiKey;
+    if (!apiKey) settingsPanel.classList.add('open');
+
+    // ── Settings ──
+    settingsToggle.addEventListener('click', () => {
+      settingsPanel.classList.toggle('open');
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      const val = apiKeyInput.value.trim();
+      if (val) {
+        apiKey = val;
+        localStorage.setItem('pc_groq_api_key', val);
+        settingsPanel.classList.remove('open');
+        showError('');
+      }
+    });
+
+    // ── Auto-resize textarea ──
+    userInput.addEventListener('input', () => {
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
+    });
+
+    // ── Send on Enter (Shift+Enter = newline) ──
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    sendBtn.addEventListener('click', handleSend);
+
+    // ── Helpers ──
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.toggle('visible', !!msg);
+    }
+
+    function scrollToBottom() {
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    function formatText(text) {
+      // Convert markdown-like bold (**text**) to <strong>
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Convert italic (*text*)
+      text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      // Convert newlines to <br> or wrap paragraphs
+      const paragraphs = text.split(/\n\n+/);
+      if (paragraphs.length > 1) {
+        return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+      }
+      return text.replace(/\n/g, '<br>');
+    }
+
+    function addMessage(role, content) {
+      welcome.classList.add('hidden');
+
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'message-meta';
+      meta.textContent = role === 'user' ? 'You' : 'The Challenger';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.innerHTML = formatText(content);
+
+      div.appendChild(meta);
+      div.appendChild(bubble);
+      chatHistory.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function addThinking() {
+      const div = document.createElement('div');
+      div.className = 'thinking';
+      div.innerHTML = `
+        <div class="dots">
+          <div></div><div></div><div></div>
+        </div>
+        <span>Challenging…</span>
+      `;
+      chatHistory.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function setLoading(val) {
+      isLoading = val;
+      sendBtn.disabled = val;
+      userInput.disabled = val;
+    }
+
+    // ── Main send handler ──
+    async function handleSend() {
+      const text = userInput.value.trim();
+      if (!text || isLoading) return;
+
+      if (!apiKey) {
+        settingsPanel.classList.add('open');
+        showError('Please enter your Groq API key first.');
+        apiKeyInput.focus();
+        return;
+      }
+
+      showError('');
+      addMessage('user', text);
+      conversationHistory.push({ role: 'user', content: text });
+
+      userInput.value = '';
+      userInput.style.height = 'auto';
+      setLoading(true);
+
+      const thinkingEl = addThinking();
+
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: 1024,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              ...conversationHistory,
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          const detail = err?.error?.message || `HTTP ${response.status}`;
+          throw new Error(detail);
+        }
+
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content || '';
+
+        thinkingEl.remove();
+        addMessage('ai', reply);
+        conversationHistory.push({ role: 'assistant', content: reply });
+
+      } catch (err) {
+        thinkingEl.remove();
+        showError(`Error: ${err.message}`);
+      } finally {
+        setLoading(false);
+        userInput.focus();
+      }
+    }
+
+    // ── Focus input on load ──
+    userInput.focus();
+  </script>
+</body>
+</html>
