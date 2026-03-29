@@ -726,6 +726,8 @@
       setLoading(true);
 
       const thinkingEl = addThinking();
+      let bubble = null;
+      let fullText = '';
 
       try {
         const response = await fetch('/.netlify/functions/chat', {
@@ -745,12 +747,47 @@
           throw new Error(detail);
         }
 
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || '';
-
+        // Switch from thinking indicator to an empty AI bubble on first response
         thinkingEl.remove();
-        addMessage('ai', reply);
-        conversationHistory.push({ role: 'assistant', content: reply });
+        const aiMsgEl = addMessage('ai', '');
+        bubble = aiMsgEl.querySelector('.message-bubble');
+
+        // Read the SSE stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuffer += decoder.decode(value, { stream: true });
+
+          // SSE lines are separated by \n; events by \n\n
+          const lines = sseBuffer.split('\n');
+          // Keep the last (possibly incomplete) line in the buffer
+          sseBuffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6).trim();
+            if (payload === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(payload);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullText += delta;
+                bubble.innerHTML = formatText(fullText);
+                scrollToBottom();
+              }
+            } catch {
+              // Partial JSON or non-data line — skip
+            }
+          }
+        }
+
+        conversationHistory.push({ role: 'assistant', content: fullText });
 
       } catch (err) {
         thinkingEl.remove();
