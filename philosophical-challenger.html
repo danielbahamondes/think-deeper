@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>The Philosophical Challenger</title>
   <style>
     * {
@@ -25,18 +25,21 @@
       --input-bg: #16161f;
     }
 
-    html, body {
+    html {
       height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Georgia', 'Times New Roman', serif;
+      height: 100dvh;
     }
 
     body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', 'Times New Roman', serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
     }
 
     /* ── Header ── */
@@ -167,6 +170,7 @@
     /* ── Chat Area ── */
     .chat-wrapper {
       flex: 1;
+      min-height: 0;
       width: 100%;
       max-width: 780px;
       display: flex;
@@ -176,7 +180,9 @@
 
     .chat-history {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 32px 24px 8px;
       display: flex;
       flex-direction: column;
@@ -464,9 +470,99 @@
 
     /* ── Responsive ── */
     @media (max-width: 600px) {
-      .message.user .message-bubble { margin-left: 24px; }
-      .message.ai .message-bubble { margin-right: 24px; }
-      .thinking { margin-right: 24px; }
+      header {
+        padding: 16px 16px 12px;
+      }
+
+      .logo-block h1 {
+        font-size: 1.1rem;
+      }
+
+      .logo-block p {
+        display: none;
+      }
+
+      .divider {
+        margin: 0 16px;
+      }
+
+      .chat-history {
+        padding: 20px 16px 8px;
+        gap: 20px;
+      }
+
+      .welcome {
+        padding: 24px 0 16px;
+        gap: 12px;
+      }
+
+      .welcome-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+      }
+
+      .welcome h2 {
+        font-size: 1rem;
+      }
+
+      .welcome p {
+        font-size: 0.84rem;
+      }
+
+      .message.user .message-bubble {
+        margin-left: 16px;
+      }
+
+      .message.ai .message-bubble {
+        margin-right: 16px;
+      }
+
+      .message-bubble {
+        font-size: 0.9rem;
+        padding: 13px 16px;
+      }
+
+      .thinking {
+        margin-right: 16px;
+      }
+
+      .input-area {
+        padding: 10px 12px 16px;
+        /* Extra bottom padding for iPhone home indicator */
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+      }
+
+      .input-row {
+        padding: 10px 12px;
+        border-radius: 12px;
+      }
+
+      textarea {
+        font-size: 16px; /* Prevents iOS auto-zoom on focus */
+        min-height: 26px;
+      }
+
+      .send-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      .send-btn svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .input-hint {
+        display: none;
+      }
+
+      .error-msg {
+        margin: 0 12px 8px;
+        font-size: 0.78rem;
+      }
     }
   </style>
 </head>
