@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>The Philosophical Challenger</title>
   <style>
     * {
@@ -12,52 +12,215 @@
     }
 
     :root {
-      --bg: #0d0d0f;
-      --surface: #13131a;
-      --surface2: #1a1a24;
-      --border: #2a2a3a;
-      --accent: #7c6af5;
+      --bg:         #0d0d0f;
+      --surface2:   #1a1a24;
+      --border:     #2a2a3a;
+      --accent:     #7c6af5;
       --accent-dim: #4a3fa0;
-      --text: #e8e8f0;
+      --text:       #e8e8f0;
       --text-muted: #7a7a9a;
-      --user-bg: #1e1e2e;
-      --ai-bg: #111118;
-      --input-bg: #16161f;
+      --user-bg:    #1e1e2e;
+      --ai-bg:      #111118;
+      --input-bg:   #16161f;
+      /* Updated by JS: measured heights of fixed regions */
+      --header-h: 57px;
+      --input-h:  76px;
+      /* Updated by JS: current keyboard height */
+      --kb-h: 0px;
     }
 
-    html {
-      height: 100%;
-      height: 100dvh;
+    /* ── Sidebar ── */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-backdrop.open {
+      display: block;
+      opacity: 1;
     }
 
-    body {
+    .sidebar {
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      width: 300px;
+      max-width: 85vw;
+      z-index: 50;
+      background: #0f0f16;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+    }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: none;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 7px 13px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .new-chat-btn:hover { background: var(--accent); }
+
+    .conv-list {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 0;
+    }
+    .conv-list::-webkit-scrollbar { width: 3px; }
+    .conv-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .conv-item {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .conv-item:hover { background: rgba(255,255,255,0.04); }
+    .conv-item.active { background: rgba(124, 106, 245, 0.12); }
+
+    .conv-item-body {
+      flex: 1;
+      min-width: 0;
+      padding: 11px 12px 11px 16px;
+    }
+
+    .conv-title {
+      font-size: 0.84rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .conv-item.active .conv-title { color: var(--accent); }
+
+    .conv-date {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .conv-delete {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1rem;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+    .conv-item:hover .conv-delete { opacity: 1; }
+    .conv-delete:hover { color: #e07070; }
+
+    /* touch devices: always show delete */
+    @media (hover: none) {
+      .conv-delete { opacity: 0.45; }
+    }
+
+    .conv-empty {
+      padding: 32px 20px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+    }
+
+    /* ── Hamburger button in header ── */
+    .hamburger {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px 4px 0;
+      line-height: 1;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .hamburger:hover { color: var(--text); }
+
+    /* Prevent all page-level scrolling — only .chat-history scrolls */
+    html, body {
       height: 100%;
-      height: 100dvh;
       overflow: hidden;
       background: var(--bg);
       color: var(--text);
       font-family: 'Georgia', 'Times New Roman', serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
-    /* ── Header ── */
+    /* ── Header: fixed at top ── */
     header {
-      width: 100%;
-      max-width: 780px;
-      padding: 28px 24px 16px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 12px;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px 12px;
+    }
+
+    .logo-block {
+      flex: 1;
+      min-width: 0;
     }
 
     .logo-block h1 {
       font-size: 1.35rem;
       font-weight: 400;
       letter-spacing: 0.06em;
-      color: var(--text);
     }
 
     .logo-block p {
@@ -68,165 +231,69 @@
       margin-top: 3px;
     }
 
-    .settings-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 6px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: 'Courier New', monospace;
-      flex-shrink: 0;
-    }
+    /* Divider replaced by header border-bottom */
+    .divider { display: none; }
 
-    .settings-toggle:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    /* chat-wrapper is a semantic shell; its children are all position:fixed */
+    .chat-wrapper { display: contents; }
 
-    /* ── Settings Panel ── */
-    .settings-panel {
-      width: 100%;
-      max-width: 780px;
-      padding: 0 24px;
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.3s ease, padding 0.3s ease;
-    }
-
-    .settings-panel.open {
-      max-height: 120px;
-      padding-bottom: 16px;
-    }
-
-    .settings-inner {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .settings-inner label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-family: 'Courier New', monospace;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .settings-inner input {
-      flex: 1;
-      background: var(--input-bg);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--text);
-      font-family: 'Courier New', monospace;
-      font-size: 0.82rem;
-      padding: 8px 12px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .settings-inner input:focus {
-      border-color: var(--accent-dim);
-    }
-
-    .save-btn {
-      background: var(--accent-dim);
-      border: none;
-      color: #fff;
-      font-size: 0.75rem;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 0.05em;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-
-    .save-btn:hover {
-      background: var(--accent);
-    }
-
-    /* ── Divider ── */
-    .divider {
-      width: 100%;
-      max-width: 780px;
-      height: 1px;
-      background: var(--border);
-      margin: 0 24px;
-    }
-
-    /* ── Chat Area ── */
-    .chat-wrapper {
-      flex: 1;
-      min-height: 0;
-      width: 100%;
-      max-width: 780px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
+    /* ── Chat history: fills the space between header and input bar ── */
     .chat-history {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 32px 24px 8px;
+      position: fixed;
+      top: var(--header-h);
+      bottom: calc(var(--input-h) + var(--kb-h));
+      left: 0; right: 0;
+      /* overflow: hidden (not scroll) while welcome is showing — this is what
+         makes flex:1 reliably fill the container on iOS Safari. Toggled to
+         scroll via .has-messages once the first message is added. */
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       gap: 28px;
-      scroll-behavior: smooth;
+      padding: 24px;
+      will-change: bottom;
     }
 
-    .chat-history::-webkit-scrollbar {
-      width: 4px;
+    .chat-history.has-messages {
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: none;
     }
 
-    .chat-history::-webkit-scrollbar-track {
-      background: transparent;
+    /* Horizontally centre content on wide screens */
+    .chat-history > * {
+      width: 100%;
+      max-width: 780px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .chat-history::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
+    .chat-history::-webkit-scrollbar { width: 4px; }
+    .chat-history::-webkit-scrollbar-track { background: transparent; }
+    .chat-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    /* ── Welcome ── */
+    /* ── Welcome: fills the full visible chat area and centres its content ──
+       flex:1 + min-height:0 works correctly only when the parent does NOT
+       have overflow-y:scroll — hence the overflow toggle above.             */
     .welcome {
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       text-align: center;
       gap: 16px;
-      padding: 48px 0 24px;
-      opacity: 1;
-      transition: opacity 0.4s;
+      padding: 24px 0;
     }
 
-    .welcome.hidden {
-      display: none;
-    }
+    .welcome.hidden { display: none; }
 
     .welcome-icon {
-      width: 56px;
-      height: 56px;
+      width: 56px; height: 56px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--accent-dim), #2e2b5e);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem;
       box-shadow: 0 0 40px rgba(124, 106, 245, 0.15);
     }
@@ -234,23 +301,19 @@
     .welcome h2 {
       font-size: 1.1rem;
       font-weight: 400;
-      color: var(--text);
       letter-spacing: 0.04em;
     }
 
     .welcome p {
       font-size: 0.88rem;
       color: var(--text-muted);
-      max-width: 420px;
+      max-width: 380px;
       line-height: 1.7;
     }
 
-    .welcome p em {
-      color: var(--accent);
-      font-style: normal;
-    }
+    .welcome p em { color: var(--accent); font-style: normal; }
 
-    /* ── Message ── */
+    /* ── Messages ── */
     .message {
       display: flex;
       flex-direction: column;
@@ -272,10 +335,7 @@
       padding: 0 4px;
     }
 
-    .message.user .message-meta {
-      text-align: right;
-      color: var(--accent-dim);
-    }
+    .message.user .message-meta { text-align: right; color: var(--accent-dim); }
 
     .message-bubble {
       padding: 16px 20px;
@@ -295,24 +355,12 @@
 
     .message.ai .message-bubble {
       background: var(--ai-bg);
-      border-color: var(--border);
       margin-right: 80px;
-      color: var(--text);
     }
 
-    /* Structured response styling */
-    .message.ai .message-bubble strong {
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .message.ai .message-bubble p {
-      margin-bottom: 10px;
-    }
-
-    .message.ai .message-bubble p:last-child {
-      margin-bottom: 0;
-    }
+    .message.ai .message-bubble strong { color: var(--accent); font-weight: 500; }
+    .message.ai .message-bubble p { margin-bottom: 10px; }
+    .message.ai .message-bubble p:last-child { margin-bottom: 0; }
 
     /* ── Thinking indicator ── */
     .thinking {
@@ -335,36 +383,42 @@
       text-transform: uppercase;
     }
 
-    .dots {
-      display: flex;
-      gap: 4px;
-    }
-
+    .dots { display: flex; gap: 4px; }
     .dots div {
-      width: 5px;
-      height: 5px;
+      width: 5px; height: 5px;
       border-radius: 50%;
       background: var(--accent-dim);
       animation: pulse 1.4s ease-in-out infinite;
     }
-
     .dots div:nth-child(2) { animation-delay: 0.2s; }
     .dots div:nth-child(3) { animation-delay: 0.4s; }
 
     @keyframes pulse {
       0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
-      40% { opacity: 1; transform: scale(1); }
+      40%           { opacity: 1;   transform: scale(1); }
     }
 
-    /* ── Input Area ── */
+    /* ── Input area: fixed just above the keyboard ── */
     .input-area {
-      padding: 16px 24px 28px;
+      position: fixed;
+      bottom: var(--kb-h);
+      will-change: bottom;
+      left: 0; right: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      /* Reserve space for the iPhone home indicator when keyboard is closed */
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 8px;
     }
 
     .input-row {
+      width: 100%;
+      max-width: 780px;
       display: flex;
       align-items: flex-end;
       gap: 10px;
@@ -375,9 +429,7 @@
       transition: border-color 0.2s;
     }
 
-    .input-row:focus-within {
-      border-color: var(--accent-dim);
-    }
+    .input-row:focus-within { border-color: var(--accent-dim); }
 
     textarea {
       flex: 1;
@@ -390,57 +442,28 @@
       line-height: 1.6;
       resize: none;
       min-height: 24px;
-      max-height: 160px;
+      max-height: 120px;
       overflow-y: auto;
     }
 
-    textarea::placeholder {
-      color: var(--text-muted);
-      font-style: italic;
-    }
-
-    textarea::-webkit-scrollbar {
-      width: 3px;
-    }
-
-    textarea::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
+    textarea::placeholder { color: var(--text-muted); font-style: italic; }
+    textarea::-webkit-scrollbar { width: 3px; }
+    textarea::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .send-btn {
       background: var(--accent-dim);
       border: none;
-      width: 34px;
-      height: 34px;
+      width: 36px; height: 36px;
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: background 0.2s, transform 0.1s;
       flex-shrink: 0;
     }
-
-    .send-btn:hover {
-      background: var(--accent);
-    }
-
-    .send-btn:active {
-      transform: scale(0.92);
-    }
-
-    .send-btn:disabled {
-      background: var(--border);
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .send-btn svg {
-      width: 15px;
-      height: 15px;
-      fill: #fff;
-    }
+    .send-btn:hover   { background: var(--accent); }
+    .send-btn:active  { transform: scale(0.92); }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+    .send-btn svg { width: 15px; height: 15px; fill: #fff; }
 
     .input-hint {
       font-size: 0.68rem;
@@ -448,137 +471,76 @@
       text-align: right;
       padding: 0 4px;
       font-family: 'Courier New', monospace;
+      width: 100%;
+      max-width: 780px;
     }
 
-    /* ── Error toast ── */
+    /* ── Error message: fixed just above the input bar ── */
     .error-msg {
+      position: fixed;
+      bottom: calc(var(--input-h) + var(--kb-h));
+      left: 0; right: 0;
+      z-index: 19;
       background: #1e0f0f;
-      border: 1px solid #5a1a1a;
+      border-top: 1px solid #5a1a1a;
       color: #e07070;
       font-size: 0.8rem;
-      padding: 10px 16px;
-      border-radius: 6px;
-      margin: 0 24px 8px;
+      padding: 10px 24px;
       font-family: 'Courier New', monospace;
       display: none;
     }
 
-    .error-msg.visible {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
+    .error-msg.visible { display: block; animation: fadeIn 0.3s ease; }
 
-    /* ── Keyboard-open state (applied via JS on mobile) ── */
-    .keyboard-open header,
-    .keyboard-open .divider {
-      display: none;
-    }
-
-    .keyboard-open .chat-history {
-      padding-top: 12px;
-    }
-
-    /* ── Responsive ── */
+    /* ── Mobile ── */
     @media (max-width: 600px) {
-      header {
-        padding: 16px 16px 12px;
-      }
+      header { padding: 12px 16px 10px; }
+      .logo-block h1 { font-size: 1.1rem; }
+      .logo-block p  { display: none; }
 
-      .logo-block h1 {
-        font-size: 1.1rem;
-      }
+      .chat-history { padding: 12px 16px 4px; gap: 20px; }
 
-      .logo-block p {
-        display: none;
-      }
+      .welcome-icon { width: 48px; height: 48px; font-size: 1.3rem; }
+      .welcome h2   { font-size: 1rem; }
+      .welcome p    { font-size: 0.84rem; }
 
-      .divider {
-        margin: 0 16px;
-      }
-
-      .chat-history {
-        padding: 20px 16px 8px;
-        gap: 20px;
-      }
-
-      .welcome {
-        padding: 24px 0 16px;
-        gap: 12px;
-      }
-
-      .welcome-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 1.3rem;
-      }
-
-      .welcome h2 {
-        font-size: 1rem;
-      }
-
-      .welcome p {
-        font-size: 0.84rem;
-      }
-
-      .message.user .message-bubble {
-        margin-left: 16px;
-      }
-
-      .message.ai .message-bubble {
-        margin-right: 16px;
-      }
-
-      .message-bubble {
-        font-size: 0.9rem;
-        padding: 13px 16px;
-      }
-
-      .thinking {
-        margin-right: 16px;
-      }
+      .message.user .message-bubble { margin-left: 16px; }
+      .message.ai   .message-bubble { margin-right: 16px; }
+      .message-bubble { font-size: 0.9rem; padding: 13px 16px; }
+      .thinking { margin-right: 16px; }
 
       .input-area {
-        padding: 10px 12px 16px;
-        /* Extra bottom padding for iPhone home indicator */
-        padding-bottom: max(16px, env(safe-area-inset-bottom));
-      }
-
-      .input-row {
         padding: 10px 12px;
-        border-radius: 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
       }
+      .input-row { border-radius: 12px; padding: 10px 12px; }
 
-      textarea {
-        font-size: 16px; /* Prevents iOS auto-zoom on focus */
-        min-height: 26px;
-      }
+      /* 16px prevents iOS from auto-zooming into the textarea on focus */
+      textarea { font-size: 16px; min-height: 26px; }
 
-      .send-btn {
-        width: 42px;
-        height: 42px;
-        border-radius: 8px;
-        flex-shrink: 0;
-      }
-
-      .send-btn svg {
-        width: 17px;
-        height: 17px;
-      }
-
-      .input-hint {
-        display: none;
-      }
-
-      .error-msg {
-        margin: 0 12px 8px;
-        font-size: 0.78rem;
-      }
+      .send-btn { width: 42px; height: 42px; border-radius: 8px; }
+      .send-btn svg { width: 17px; height: 17px; }
+      .input-hint { display: none; }
+      .error-msg { padding: 8px 16px; font-size: 0.78rem; }
     }
   </style>
 </head>
 <body>
 
+  <!-- Sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Conversations</span>
+      <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
+    </div>
+    <div class="conv-list" id="convList"></div>
+  </aside>
+
   <header>
+    <button class="hamburger" id="hamburger" title="Conversations">&#9776;</button>
     <div class="logo-block">
       <h1>The Philosophical Challenger</h1>
       <p>Think deeper through tension &amp; challenge</p>
@@ -601,7 +563,7 @@
 
     <div class="error-msg" id="errorMsg"></div>
 
-    <div class="input-area">
+    <div class="input-area" id="inputArea">
       <div class="input-row">
         <textarea
           id="userInput"
@@ -621,34 +583,177 @@
   <script>
     const SYSTEM_PROMPT = `You are a philosophical challenger, not an assistant. Your role is to rigorously question, refine, and pressure-test the user's beliefs. Instructions: When the user presents an idea, belief, or opinion: 1. Identify underlying assumptions 2. Challenge those assumptions directly 3. Present a strong opposing perspective (steelman, not strawman) 4. Point out contradictions or blind spots 5. Offer a more refined or nuanced version of their idea 6. Explore the root — ask the user why they hold this belief. Where does it come from? Personal experience, upbringing, culture, fear, or desire? Help them trace the belief back to its origin so they can decide if the foundation is solid. Style: Be sharp, but not disrespectful. Do not agree easily. Do not default to neutrality. Push the user to think deeper, not feel validated. Structure responses like: 'What you're assuming is…' 'A stronger counterpoint would be…' 'Where this breaks down is…' 'A more refined version of your idea might be…' 'The root of this belief might be…' Goal: Help the user reach clearer, more precise thinking through tension and challenge. Wait for the user to present a belief or idea before responding. Special behavior: If the user asks to dig deeper, explore further, or focus on a specific point from the previous response — using phrases like "dig deeper", "tell me more about", "expand on", "why do you say", "elaborate on", "unpack that", or similar — shift out of challenge mode. Instead, deeply explore that specific point: ask follow-up questions, trace the idea further, examine its implications, and help the user fully unpack it without introducing new counterarguments or pressure. Otherwise, default to standard challenge mode for new beliefs or ideas.`;
 
+    // ── Elements ──
+    const chatHistory     = document.getElementById('chatHistory');
+    const welcome         = document.getElementById('welcome');
+    const errorMsg        = document.getElementById('errorMsg');
+    const userInput       = document.getElementById('userInput');
+    const sendBtn         = document.getElementById('sendBtn');
+    const sidebar         = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const hamburger       = document.getElementById('hamburger');
+    const newChatBtn      = document.getElementById('newChatBtn');
+    const convList        = document.getElementById('convList');
+
     // ── State ──
     let conversationHistory = [];
     let isLoading = false;
+    let currentId = null;   // ID of the active conversation
 
-    // ── Elements ──
-    const chatHistory    = document.getElementById('chatHistory');
-    const welcome        = document.getElementById('welcome');
-    const errorMsg       = document.getElementById('errorMsg');
-    const userInput      = document.getElementById('userInput');
-    const sendBtn        = document.getElementById('sendBtn');
+    // ════════════════════════════════════════════
+    //  localStorage helpers
+    // ════════════════════════════════════════════
+    const STORE_KEY = 'pc_conversations';
 
-    // ── Auto-resize textarea ──
-    userInput.addEventListener('input', () => {
-      userInput.style.height = 'auto';
-      userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
-    });
+    function loadAllConversations() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+      catch { return []; }
+    }
 
-    // ── Send on Enter (Shift+Enter = newline) ──
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
+    function saveAllConversations(list) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(list));
+    }
+
+    function saveCurrentConversation() {
+      if (!currentId || conversationHistory.length === 0) return;
+      const list = loadAllConversations();
+      const idx  = list.findIndex(c => c.id === currentId);
+      // Title = first user message, trimmed to 60 chars
+      const firstUser = conversationHistory.find(m => m.role === 'user');
+      const title = firstUser
+        ? firstUser.content.slice(0, 60) + (firstUser.content.length > 60 ? '…' : '')
+        : 'Untitled';
+      const entry = { id: currentId, title, date: Date.now(), messages: conversationHistory };
+      if (idx >= 0) list[idx] = entry;
+      else list.unshift(entry);
+      saveAllConversations(list);
+      renderSidebar();
+    }
+
+    function deleteConversation(id) {
+      const list = loadAllConversations().filter(c => c.id !== id);
+      saveAllConversations(list);
+      if (currentId === id) startNewChat();
+      else renderSidebar();
+    }
+
+    // ════════════════════════════════════════════
+    //  Sidebar rendering
+    // ════════════════════════════════════════════
+    function formatDate(ts) {
+      const d = new Date(ts);
+      const today = new Date();
+      const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+      if (d.toDateString() === today.toDateString())     return 'Today';
+      if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function renderSidebar() {
+      const list = loadAllConversations();
+      convList.innerHTML = '';
+
+      if (list.length === 0) {
+        convList.innerHTML = '<div class="conv-empty">No conversations yet.<br>Start one below.</div>';
+        return;
       }
+
+      list.forEach(conv => {
+        const item = document.createElement('div');
+        item.className = 'conv-item' + (conv.id === currentId ? ' active' : '');
+
+        const body = document.createElement('div');
+        body.className = 'conv-item-body';
+        body.innerHTML = `
+          <div class="conv-title">${escapeHtml(conv.title)}</div>
+          <div class="conv-date">${formatDate(conv.date)}</div>
+        `;
+        body.addEventListener('click', () => { loadConversation(conv.id); closeSidebar(); });
+
+        const del = document.createElement('button');
+        del.className = 'conv-delete';
+        del.title = 'Delete';
+        del.textContent = '×';
+        del.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteConversation(conv.id);
+        });
+
+        item.appendChild(body);
+        item.appendChild(del);
+        convList.appendChild(item);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ════════════════════════════════════════════
+    //  Conversation loading / starting
+    // ════════════════════════════════════════════
+    function startNewChat() {
+      currentId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
+      conversationHistory = [];
+      // Clear rendered messages, re-show welcome
+      Array.from(chatHistory.children).forEach(el => {
+        if (el !== welcome) el.remove();
+      });
+      welcome.classList.remove('hidden');
+      chatHistory.classList.remove('has-messages');
+      showError('');
+      renderSidebar();
+    }
+
+    function loadConversation(id) {
+      const list = loadAllConversations();
+      const conv = list.find(c => c.id === id);
+      if (!conv) return;
+
+      currentId = id;
+      conversationHistory = conv.messages;
+
+      // Clear rendered messages
+      Array.from(chatHistory.children).forEach(el => {
+        if (el !== welcome) el.remove();
+      });
+
+      if (conv.messages.length === 0) {
+        welcome.classList.remove('hidden');
+        chatHistory.classList.remove('has-messages');
+      } else {
+        welcome.classList.add('hidden');
+        chatHistory.classList.add('has-messages');
+        conv.messages.forEach(m => renderMessage(m.role, m.content));
+        scrollToBottom();
+      }
+
+      showError('');
+      renderSidebar();
+    }
+
+    // ════════════════════════════════════════════
+    //  Sidebar open/close
+    // ════════════════════════════════════════════
+    function openSidebar() {
+      sidebar.classList.add('open');
+      sidebarBackdrop.classList.add('open');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('open');
+    }
+
+    hamburger.addEventListener('click', () => {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
     });
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    newChatBtn.addEventListener('click', () => { startNewChat(); closeSidebar(); });
 
-    sendBtn.addEventListener('click', handleSend);
-
-    // ── Helpers ──
+    // ════════════════════════════════════════════
+    //  Chat rendering helpers
+    // ════════════════════════════════════════════
     function showError(msg) {
       errorMsg.textContent = msg;
       errorMsg.classList.toggle('visible', !!msg);
@@ -659,11 +764,8 @@
     }
 
     function formatText(text) {
-      // Convert markdown-like bold (**text**) to <strong>
       text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      // Convert italic (*text*)
       text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-      // Convert newlines to <br> or wrap paragraphs
       const paragraphs = text.split(/\n\n+/);
       if (paragraphs.length > 1) {
         return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
@@ -671,36 +773,34 @@
       return text.replace(/\n/g, '<br>');
     }
 
-    function addMessage(role, content) {
-      welcome.classList.add('hidden');
-
+    // Renders a message bubble (used both for new messages and history replay)
+    function renderMessage(role, content) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
-
       const meta = document.createElement('div');
       meta.className = 'message-meta';
       meta.textContent = role === 'user' ? 'You' : 'The Challenger';
-
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
       bubble.innerHTML = formatText(content);
-
       div.appendChild(meta);
       div.appendChild(bubble);
       chatHistory.appendChild(div);
-      scrollToBottom();
       return div;
+    }
+
+    function addMessage(role, content) {
+      welcome.classList.add('hidden');
+      chatHistory.classList.add('has-messages');
+      const el = renderMessage(role, content);
+      scrollToBottom();
+      return el;
     }
 
     function addThinking() {
       const div = document.createElement('div');
       div.className = 'thinking';
-      div.innerHTML = `
-        <div class="dots">
-          <div></div><div></div><div></div>
-        </div>
-        <span>Challenging…</span>
-      `;
+      div.innerHTML = `<div class="dots"><div></div><div></div><div></div></div><span>Challenging…</span>`;
       chatHistory.appendChild(div);
       scrollToBottom();
       return div;
@@ -712,7 +812,9 @@
       userInput.disabled = val;
     }
 
-    // ── Main send handler ──
+    // ════════════════════════════════════════════
+    //  Send handler
+    // ════════════════════════════════════════════
     async function handleSend() {
       const text = userInput.value.trim();
       if (!text || isLoading) return;
@@ -743,51 +845,36 @@
 
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
-          const detail = err?.error?.message || `HTTP ${response.status}`;
-          throw new Error(detail);
+          throw new Error(err?.error?.message || `HTTP ${response.status}`);
         }
 
-        // Switch from thinking indicator to an empty AI bubble on first response
         thinkingEl.remove();
         const aiMsgEl = addMessage('ai', '');
         bubble = aiMsgEl.querySelector('.message-bubble');
 
-        // Read the SSE stream
-        const reader = response.body.getReader();
+        const reader  = response.body.getReader();
         const decoder = new TextDecoder();
         let sseBuffer = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           sseBuffer += decoder.decode(value, { stream: true });
-
-          // SSE lines are separated by \n; events by \n\n
           const lines = sseBuffer.split('\n');
-          // Keep the last (possibly incomplete) line in the buffer
           sseBuffer = lines.pop();
-
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const payload = line.slice(6).trim();
             if (payload === '[DONE]') break;
-
             try {
-              const parsed = JSON.parse(payload);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                fullText += delta;
-                bubble.innerHTML = formatText(fullText);
-                scrollToBottom();
-              }
-            } catch {
-              // Partial JSON or non-data line — skip
-            }
+              const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+              if (delta) { fullText += delta; bubble.innerHTML = formatText(fullText); scrollToBottom(); }
+            } catch { /* partial chunk */ }
           }
         }
 
         conversationHistory.push({ role: 'assistant', content: fullText });
+        saveCurrentConversation();
 
       } catch (err) {
         thinkingEl.remove();
@@ -798,56 +885,55 @@
       }
     }
 
-    // ── Focus input on load ──
-    userInput.focus();
+    // ── Input events ──
+    userInput.addEventListener('input', () => {
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
+    });
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    });
+    sendBtn.addEventListener('click', handleSend);
 
-    // ── Mobile keyboard handling ──
-    // Uses visualViewport (the only reliable iOS keyboard signal).
-    // Two compounding problems on iOS Safari:
-    //   1. The browser silently scrolls window.scrollY when an input is focused,
-    //      offsetting the page downward and revealing blank space at the bottom.
-    //   2. scrollToBottom() on the welcome screen scrolls to empty space.
-    // Fix: counteract the page scroll with translateY(-vv.pageTop), and only
-    // hide the header / scroll to bottom when there are actual messages.
+    // ════════════════════════════════════════════
+    //  Boot
+    // ════════════════════════════════════════════
+    // Resume the most recent conversation, or start fresh
+    (function boot() {
+      const list = loadAllConversations();
+      if (list.length > 0) {
+        loadConversation(list[0].id);
+      } else {
+        startNewChat();
+      }
+      userInput.focus();
+    })();
+
+    // ════════════════════════════════════════════
+    //  Fixed layout: CSS vars from measured heights + keyboard
+    // ════════════════════════════════════════════
+    const inputAreaEl = document.getElementById('inputArea');
+    const headerEl    = document.querySelector('header');
+    const root        = document.documentElement;
+
+    function syncSizes() {
+      root.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+      root.style.setProperty('--input-h',  inputAreaEl.offsetHeight + 'px');
+    }
+
+    new ResizeObserver(syncSizes).observe(headerEl);
+    new ResizeObserver(syncSizes).observe(inputAreaEl);
+    syncSizes();
+
     if (window.visualViewport) {
-      const applyViewport = () => {
-        const vv = window.visualViewport;
-        const vvHeight = Math.round(vv.height);
-        const keyboardOpen = (window.innerHeight - vvHeight) > 150;
-        const hasMessages = welcome.classList.contains('hidden');
-
-        // Constrain the app to the actual visible area.
-        document.body.style.height = vvHeight + 'px';
-
-        // vv.pageTop is the scroll offset iOS silently applies to bring the
-        // focused input into view. A negative translateY cancels that shift,
-        // preventing the blank-black-area-at-the-bottom bug.
-        document.body.style.transform = `translateY(${-Math.round(vv.pageTop)}px)`;
-
-        // Only collapse the header when the keyboard is open AND there are
-        // messages to show — on the welcome screen the header fills space and
-        // helps keep content visible.
-        document.documentElement.classList.toggle('keyboard-open', keyboardOpen && hasMessages);
-
-        if (keyboardOpen) {
-          if (hasMessages) {
-            // Messages exist: keep the latest in view.
-            scrollToBottom();
-          } else {
-            // Welcome screen: scroll to top so the icon/title stay visible.
-            chatHistory.scrollTop = 0;
-          }
-        } else {
-          // Keyboard dismissed: restore natural sizing.
-          document.body.style.height = '';
-          document.body.style.transform = '';
-        }
+      const onVVChange = () => {
+        const kbH = Math.max(0, window.innerHeight - window.visualViewport.height);
+        root.style.setProperty('--kb-h', kbH + 'px');
+        syncSizes();
+        if (kbH > 0) scrollToBottom();
       };
-
-      // 'resize' fires as the keyboard animates; 'scroll' fires when iOS
-      // offsets the page — both need the same correction.
-      window.visualViewport.addEventListener('resize', applyViewport);
-      window.visualViewport.addEventListener('scroll', applyViewport);
+      window.visualViewport.addEventListener('resize', onVVChange);
+      window.visualViewport.addEventListener('scroll', onVVChange);
     }
   </script>
 </body>
