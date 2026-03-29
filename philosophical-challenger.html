@@ -468,6 +468,16 @@
       animation: fadeIn 0.3s ease;
     }
 
+    /* ── Keyboard-open state (applied via JS on mobile) ── */
+    .keyboard-open header,
+    .keyboard-open .divider {
+      display: none;
+    }
+
+    .keyboard-open .chat-history {
+      padding-top: 12px;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       header {
@@ -753,6 +763,45 @@
 
     // ── Focus input on load ──
     userInput.focus();
+
+    // ── Mobile keyboard handling ──
+    // visualViewport is the only reliable way to detect the iOS keyboard.
+    // window.innerHeight and dvh don't update fast enough or consistently.
+    if (window.visualViewport) {
+      let lastHeight = window.visualViewport.height;
+
+      const onViewportResize = () => {
+        const vv = window.visualViewport;
+        const vvHeight = Math.round(vv.height);
+
+        // Drive the full app height from the actual visible area so nothing
+        // sits behind the keyboard.
+        document.body.style.height = vvHeight + 'px';
+
+        // Keyboard is open when the visible area is meaningfully shorter than
+        // the full window height. 150 px is a safe threshold across devices.
+        const keyboardOpen = (window.innerHeight - vvHeight) > 150;
+        const wasOpen = document.documentElement.classList.contains('keyboard-open');
+
+        document.documentElement.classList.toggle('keyboard-open', keyboardOpen);
+
+        // Scroll chat to bottom whenever the keyboard opens or while it
+        // finishes animating in (resize fires multiple times).
+        if (keyboardOpen) {
+          scrollToBottom();
+        }
+
+        // When keyboard closes, restore natural body height so the header
+        // reappears and the layout fills the screen again.
+        if (!keyboardOpen) {
+          document.body.style.height = '';
+        }
+
+        lastHeight = vvHeight;
+      };
+
+      window.visualViewport.addEventListener('resize', onViewportResize);
+    }
   </script>
 </body>
 </html>
